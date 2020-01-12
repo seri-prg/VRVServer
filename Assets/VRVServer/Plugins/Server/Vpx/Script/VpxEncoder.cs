@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Profiling;
+using UnityEngine.Rendering;
 
 
 
@@ -12,20 +11,32 @@ using UnityEngine;
 // 
 public class VpxEncoder
 {
-	private const int VPX_EFLAG_FORCE_KF = 1 << 0;	// キーフレーム設定
+	private const int VPX_EFLAG_FORCE_KF = 1 << 0;  // キーフレーム設定
 
 
-	private Texture2D _srcTexture = null;	// フレームバッファを受け取るテクスチャ
+	private Texture _srcTexture = null;   // フレームバッファを受け取るテクスチャ
 
 	public int Width { get; private set; }
 	public int Hight { get; private set; }
 
 	public int ImgId { get; private set; } = 0;
 
-	private bool _updateBuffer = false;
 	private bool _enableBackground = true;
 	private Color32[] _pixBuffer = null;
+	private int _pixBufferSize = 0;
 	private Task _backgroundEncoder = null;
+
+	private AsyncGPUReadbackRequest _readReqest;
+
+	private enum UpState
+	{
+		Non,			// 何もしていない
+		ReadPixel,		// 画素ロード中
+		SendBuffer,		// データ送信中
+	}
+
+
+	private UpState _updateState = UpState.Non;
 
 	public event Action<IntPtr, int> OnEncoded = null;	// エンコード時
 
@@ -52,7 +63,7 @@ public class VpxEncoder
 
 
 
-	public void Setup(int width, int hight, int bitrate, int useCpu)
+	public void Setup(int width, int hight, int bitrate, int useCpu, Texture srcTexture)
 	{
 		this.Width = Mathf.Min(Screen.width, width);
 		this.Hight = Mathf.Min(Screen.height, hight);
@@ -64,7 +75,9 @@ public class VpxEncoder
 		this.WriteBuffer();
 
 		_enableBackground = true;
-		_updateBuffer = false;
+
+		_updateState = UpState.Non;
+		_srcTexture = srcTexture;
 
 		_backgroundEncoder = Task.Run(BackGroundEncode);
 	}
@@ -76,22 +89,17 @@ public class VpxEncoder
 		while(_enableBackground)
 		{
 			// 更新がなければ無処理
-			while (!_updateBuffer)
+			while (_updateState != UpState.SendBuffer)
 			{
 				if (!_enableBackground)
 					return;
 			}
 
-			// 本来Encodeは別スレッドで行う。
-			// エンコード中にOnPostRenderに再度来た場合は転送が間に合っていないので
-			// そのフレームはスキップ
 			this.Encode();
 
-			_updateBuffer = false;
+			_updateState = UpState.Non; // 無処理状態に戻る
 		}
 	}
-
-
 
 
 	// 画像更新
@@ -99,26 +107,53 @@ public class VpxEncoder
 	// OnPostRender()内で実行してください。
 	public void OnPostRender()
 	{
-		// 送信中なら無処理
-		if (_updateBuffer)
-			return;
-
-		// テクスチャが生成されていない場合
-		if (_srcTexture == null)
+		switch (_updateState)
 		{
-			_srcTexture = new Texture2D(this.Width, this.Hight);
+			case UpState.Non:
+
+				// フレームバッファを取得
+				if (_srcTexture != null)
+				{
+					_updateState = UpState.ReadPixel;
+
+					_readReqest = AsyncGPUReadback.Request(_srcTexture, 0,
+						(AsyncGPUReadbackRequest readReq) =>
+					{
+						if (!readReq.hasError)
+						{
+							Profiler.BeginSample("_srcTexture.GetPixels32");
+
+							int nextSize = readReq.GetData<Color32>().Length;
+							if ((_pixBuffer?.Length ?? 0) < nextSize)
+							{
+								_pixBuffer = new Color32[nextSize];
+							}
+							readReq.GetData<Color32>().CopyTo(_pixBuffer);
+							_pixBufferSize = nextSize;
+
+							Profiler.EndSample();
+						}
+
+						_updateState = UpState.SendBuffer;
+					});
+				}
+				break;
+			case UpState.ReadPixel:
+#if false
+				// pixcelリード中なら終了まで待つ
+				if (!_readReqest.done)
+				{
+					Profiler.BeginSample("_readReqest.WaitForCompletion");
+					_readReqest.WaitForCompletion();
+					Profiler.EndSample();
+				}
+#endif
+				break;
+			case UpState.SendBuffer:
+				break;
+			default:
+				break;
 		}
-
-
-		// フレームバッファを取得
-		if (_srcTexture != null)
-		{
-			_srcTexture.ReadPixels(new Rect(0, 0, _srcTexture.width, _srcTexture.height), 0, 0);
-			_srcTexture.Apply();
-			_pixBuffer = _srcTexture.GetPixels32();
-		}
-
-		_updateBuffer = true;
 	}
 
 
@@ -129,8 +164,11 @@ public class VpxEncoder
 		{
 			this.ImgId++;
 			var gcH = GCHandle.Alloc(_pixBuffer, GCHandleType.Pinned);
-			VpxDllCall.EncodeSetFrameYUV(gcH.AddrOfPinnedObject(),
-						_pixBuffer.Length * Marshal.SizeOf(typeof(Color32)), this.Width, 0, this.ImgId);
+
+//			var size = _pixBuffer.Length * Marshal.SizeOf(typeof(Color32));
+			var size = _pixBufferSize * Marshal.SizeOf(typeof(Color32));
+			VpxDllCall.EncodeSetFrameYUV(gcH.AddrOfPinnedObject(), size, this.Width, 0, this.ImgId);
+
 			gcH.Free();
 		}
 		catch (Exception e)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿// #define READ_PIX_DEBUG
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,10 @@ using UnityEngine;
 public class VRVController : MonoBehaviour
 {
 	private Camera _camera = null;
+
+	[SerializeField]
+	private Material _lensMaterial = null;
+
 
 	[SerializeField]
 	private Transform _rotTarget = null;
@@ -64,6 +69,13 @@ public class VRVController : MonoBehaviour
 			return;
 		}
 
+
+		if (_lensMaterial == null)
+		{
+			Debug.LogError("lens material is not setting");
+			return;
+		}
+
 		if (_rotTarget == null)
 		{
 			Debug.LogError("_rotOffset is not setting");
@@ -78,7 +90,11 @@ public class VRVController : MonoBehaviour
 		_encoder.OnEncoded += this.WriteStream;   // 書き込みコールバック
 
 		_eyeInput.Setup(_rotTarget);
-		_lensCorrenction.Setup(_camera);
+		_lensCorrenction.Setup(_camera, _lensMaterial);
+
+#if READ_PIX_DEBUG
+		_encoder.Setup(Screen.width, Screen.height, 600, 10);
+#endif
 
 		// クライアントから設定が届いた時
 		NetworkSender.Instance.NetIO.GetResever<HvNetIOClientSetting>().OnSetting += NetworkSender_OnSetting;
@@ -137,7 +153,7 @@ public class VRVController : MonoBehaviour
 		HvNetIOStartInfo.Send(NetworkSender.Instance.NetIO, this.HmdWidth, this.HmdHeight, 1024);
 
 		// クライアントと繋がったら送信する。
-		_encoder.Setup(this.HmdWidth, this.HmdHeight, _bitrate, _useCpu);
+		_encoder.Setup(this.HmdWidth, this.HmdHeight, _bitrate, _useCpu, _lensCorrenction.LensTexture);
 
 		// １度画像IDを揃える
 		_waitClient = false;
@@ -165,6 +181,10 @@ public class VRVController : MonoBehaviour
 	{
 		RenderTexture.active = _lensCorrenction.LensTexture;
 
+#if READ_PIX_DEBUG
+		// デバッグ
+		_encoder.OnPostRender();
+#else
 		if (this.IsPlay)
 		{
 			// クライアントが一定以上遅れたので、１度待つ
@@ -187,6 +207,8 @@ public class VRVController : MonoBehaviour
 			}
 
 		}
+#endif
+
 	}
 
 	private void OnDestroy()

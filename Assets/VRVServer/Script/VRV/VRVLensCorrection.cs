@@ -15,23 +15,25 @@ public class VRVLensCorrection
 	private VRVLensMesh _lensMesh = new VRVLensMesh();
 	private CommandBuffer _buffer = null;
 	private Camera _camera = null;
+	private Material _lens = null;
 
 	public RenderTexture LensTexture { get; private set; } = null;
 
 
-	public void Setup(Camera camera)
+	public void Setup(Camera camera, Material lens)
 	{
 		_camera = camera;
 		// レンズ用メッシュ作成
 		_lensMesh.Create(20, 20);
+		_lens = lens;
 
-		this.SetupCommandBuffer(Screen.width, Screen.height);
+		this.SetupCommandBuffer(Screen.width, Screen.height, _lens);
 	}
 
 
 	public void ResizeBufffer(int width, int height)
 	{
-		this.SetupCommandBuffer(width, height);
+		this.SetupCommandBuffer(width, height, _lens);
 	}
 
 
@@ -49,10 +51,9 @@ public class VRVLensCorrection
 	}
 
 
-	private void SetupCommandBuffer(int width, int height)
+	private void SetupCommandBuffer(int width, int height, Material lens)
 	{
 		this.Remove();
-
 
 		// RenderTextureを作る
 		LensTexture = new RenderTexture(width, height, 24, GraphicsFormat.R8G8B8A8_UNorm);
@@ -60,9 +61,6 @@ public class VRVLensCorrection
 		LensTexture.Create();
 
 		Debug.Log($"server frame tex = {this.LensTexture.width}, {this.LensTexture.height}");
-
-		var shader = Shader.Find("Unlit/LensUnlitShader");
-		var material = new Material(shader);
 
 		// コマンドバッファを作成する
 		_buffer = new CommandBuffer();
@@ -77,16 +75,18 @@ public class VRVLensCorrection
 		//		commandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
 		_buffer.SetRenderTarget(LensTexture);
 
-
+#if false
+		var shader = Shader.Find("Unlit/LensUnlitShader");
+		var material = new Material(shader);
+#endif
 		_buffer.SetGlobalTexture("_MyTex", screenCopyID);
-		_buffer.DrawMesh(_lensMesh.Mesh, Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, 1, 1)), material);
+		_buffer.DrawMesh(_lensMesh.Mesh, Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, 1, 1)), lens);
 
 		_buffer.ReleaseTemporaryRT(screenCopyID);
 
 		// カメラにコマンドバッファを登録する。
-		_camera.AddCommandBuffer(CameraEvent.AfterEverything, _buffer);
+//		_camera.AddCommandBuffer(CameraEvent.AfterEverything, _buffer);
+		_camera.AddCommandBuffer(CameraEvent.AfterImageEffects, _buffer);
 	}
-
-
 
 }
