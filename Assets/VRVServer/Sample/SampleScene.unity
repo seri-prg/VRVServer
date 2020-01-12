@@ -375,6 +375,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d7966d5a13be0c4aa009a22061c0dbc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _lensMaterial: {fileID: 2100000, guid: 189f2822e08aad54fac6bb4048ba30ce, type: 2}
   _rotTarget: {fileID: 534669905}
   _port: 10023
   _clientUVScale: 0.9
