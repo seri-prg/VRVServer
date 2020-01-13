@@ -1,7 +1,8 @@
 # VRVServer
 
 ## What's this?
-Head Mounted Display server system for Unity using android.
+Head Mounted Display server system for Unity using android.  
+Send streaming images from PC and receive head tracking information from Android.  
 ![work_image](http://drive.google.com/uc?export=view&id=11nvW7HNptyBd0bJbXEqdW3aFT4RygGW3)
 
 
@@ -26,5 +27,17 @@ Head Mounted Display server system for Unity using android.
 |Use Cpu|[0-16] The lower the value, the higher the quality and the slower|
 
 ## Demo
-https://drive.google.com/open?id=1-G6OTZO2tuOLOmh7RrehdE60sZNmuQ_z
+This demo is a Unity Particle Tutorial with VRVServer added.  
+https://drive.google.com/open?id=1-G6OTZO2tuOLOmh7RrehdE60sZNmuQ_z  
+![screen_shot](http://drive.google.com/uc?export=view&id=12UK5TBf-BnqvtwT-878_EDp9p4Dkr_Ya)  
+
+Original  
+https://assetstore.unity.com/packages/essentials/tutorial-projects/unity-particle-pack-127325
+
+### how to play
+1. download demo and play hmd_test.exe. 
+2. input ip address to hmd client for android. 
+![client_setting](http://drive.google.com/uc?export=view&id=1SoBqVSSisKGCfLCijd1LY4LPoBCBCeZT)
+
+3. push "input IP And Port" button. 
 
