@@ -1,9 +1,11 @@
 # VRVServer
-Head Mounted Display server system for Unity using android
+
+## What's this?
+Head Mounted Display server system for Unity using android.
+![work_image](http://drive.google.com/uc?export=view&id=11nvW7HNptyBd0bJbXEqdW3aFT4RygGW3)
 
 
-
-## How to use
+## How to setting
 
 1. Add VRVController in same Gameobject as camera.
 ![insert_component](http://drive.google.com/uc?export=view&id=1GxA0WWejB7x7Rvl4xpiy8dCTc63ily2e)
@@ -23,6 +25,6 @@ Head Mounted Display server system for Unity using android
 |Bitrate|encoding bitrate|
 |Use Cpu|[0-16] The lower the value, the higher the quality and the slower|
 
-## demo
+## Demo
 https://drive.google.com/open?id=1-G6OTZO2tuOLOmh7RrehdE60sZNmuQ_z
 
