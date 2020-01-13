@@ -2,7 +2,7 @@
 
 ## What's this?
 Head Mounted Display server system for Unity using android.  
-Send streaming images from PC and receive head tracking information from Android.  
+Send streaming images from windows application and receive head tracking information from Android.  
 ![work_image](http://drive.google.com/uc?export=view&id=11nvW7HNptyBd0bJbXEqdW3aFT4RygGW3)
 
 
