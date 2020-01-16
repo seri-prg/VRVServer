@@ -26,7 +26,11 @@ public class OggLiveEncoder : MonoBehaviour
 	private int _sampleRate = 44100;
 
 
-	void Start()
+	[SerializeField]
+	private bool _mute = false;
+
+
+	virtual protected void Start()
     {
 		if (this.GetComponent<AudioListener>() == null)
 		{
@@ -34,10 +38,11 @@ public class OggLiveEncoder : MonoBehaviour
 		}
 
 		_sampleRate = AudioSettings.outputSampleRate;
+		Debug.Log($"encode sample rate [{_sampleRate}]");
 	}
 
 
-	private void OnAudioFilterRead(float[] data, int channels)
+	virtual protected void OnAudioFilterRead(float[] data, int channels)
 	{
 		// 再生状態の更新
 		this.UpdatePlaying();
@@ -47,6 +52,15 @@ public class OggLiveEncoder : MonoBehaviour
 			_tmpWavBuffer = data;
 			OggCall.COggEncodUpdate(data.Length / channels);
 			_tmpWavBuffer = null;
+		}
+
+		// フラグが立っていれば大本の再生をしない
+		if (_mute)
+		{
+			for (int i = 0; i < data.Length; i++)
+			{
+				data[i] = 0.0f;
+			}
 		}
 	}
 
@@ -160,7 +174,7 @@ public class OggLiveEncoder : MonoBehaviour
 
 
 
-	private void OnDestroy()
+	virtual protected void OnDestroy()
 	{
 		this.Stop();
 		this.UpdatePlaying();

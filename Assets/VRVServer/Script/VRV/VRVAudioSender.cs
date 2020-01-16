@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 public class VRVAudioSender : OggLiveEncoder
 {
 
-	private void Start()
+	protected override void Start()
 	{
+		base.Start();
+
 		NetworkSender.Instance.NetIO.GetResever<HvNetIOClientSetting>().OnSetting += VRVAudioSender_OnSetting;
 		NetworkSender.Instance.NetIO.OnDisconnected += NetIO_OnDisconnected;
 	}
