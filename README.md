@@ -5,6 +5,13 @@ Head Mounted Display server system for Unity using android.
 Send streaming images from windows application and receive head tracking information from Android.  
 ![work_image](http://drive.google.com/uc?export=view&id=11nvW7HNptyBd0bJbXEqdW3aFT4RygGW3)
 
+Android client is this.
+https://play.google.com/store/apps/details?id=com.seri.hmdclient
+
+
+demo play
+https://www.youtube.com/watch?v=SZCVLgLQu1M
+
 
 ## How to setting
 
